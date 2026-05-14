@@ -1,53 +1,32 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { SearchBar } from '../components/SearchBar';
-import { QuickAssistCard } from '../components/QuickAssistCard';
 import { ResultsList } from '../components/ResultsList';
 import { AnswerSkeleton, ResultsListSkeleton } from '../components/Skeletons';
-import { Tabs, Tab } from '../components/Tabs';
-import { RightRail } from '../components/RightRail';
 import { performSearch, SearchResponse } from '../lib/search';
-import { Doctor, Location } from '../data/searchIndex';
+import { Doctor, Location, searchIndex as allPages } from '../data/searchIndex';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Activity, UserRound, Video, Brain, FlaskConical, Stethoscope,
-  ChevronRight, Star, MapPin, Clock, CheckCircle2, CalendarDays,
-  ArrowUpRight, LogIn, LogOut, Sparkles,
+  Star, MapPin, Clock, CheckCircle2,
+  LogIn, Sparkles, FileText, Send, ArrowRight,
 } from 'lucide-react';
 
 // ─── Static data ──────────────────────────────────────────────────────────────
-
-const careCategories = [
-  { icon: Activity,     label: 'Urgent Care',      query: 'urgent care near me',                        note: 'Walk-in · No appointment' },
-  { icon: UserRound,    label: 'Primary Care',      query: 'primary care doctor accepting new patients', note: 'New patients welcome' },
-  { icon: Video,        label: 'Virtual Visit',     query: 'schedule a video visit today',               note: 'Available today' },
-  { icon: Brain,        label: 'Mental Health',     query: 'mental health counseling near me',           note: 'Confidential care' },
-  { icon: FlaskConical, label: 'Imaging & Labs',    query: 'lab work and imaging services',              note: 'Walk-in available' },
-  { icon: Stethoscope,  label: 'Find a Specialist', query: 'find a specialist near me',                  note: 'All specialties' },
-];
 
 const patientSearches = [
   'Urgent care wait times',
   'Find a primary care doctor',
   'Book a same-day appointment',
   'Video visit today',
-  'My medical records',
   'Nearest ER',
+  'My medical records',
 ];
-
-const navLinks = ['Care options', 'Patients & visitors', 'Community', 'About'];
 
 // ─── Mock logged-in user ──────────────────────────────────────────────────────
 
 const MOCK_USER = {
   firstName: 'Ryan',
-  fullName: 'Ryan McCarty',
   initials: 'RM',
-  primaryDoctor: {
-    id: 'd3',
-    name: 'Dr. Priya Patel',
-    specialty: 'Primary Care',
-    photoUrl: 'https://images.unsplash.com/photo-1594824436998-d40bb60241a7?auto=format&fit=crop&q=80&w=150&h=150',
-  },
+  primaryDoctor: { name: 'Dr. Priya Patel', specialty: 'Primary Care' },
   upcomingAppointment: {
     doctor: 'Dr. Priya Patel',
     type: 'Annual wellness visit',
@@ -55,7 +34,6 @@ const MOCK_USER = {
     time: '2:45 PM',
   },
   recentSearches: ['pediatrician near me', 'urgent care wait times', 'MyChart login'],
-  followedTopics: ['Primary Care', 'Cardiology', 'Mental Health'],
 };
 
 // ─── Deterministic helpers ────────────────────────────────────────────────────
@@ -70,19 +48,16 @@ const WAITS   = [
 ];
 const RATINGS = [4.9, 4.8, 4.7, 4.6, 4.8];
 
-const nextAvailable = (id: string) => SLOTS[id.charCodeAt(id.length - 1) % SLOTS.length];
+const nextAvailable  = (id: string) => SLOTS[id.charCodeAt(id.length - 1) % SLOTS.length];
 const locationStatus = (id: string) => WAITS[id.charCodeAt(id.length - 1) % WAITS.length];
-const starRating = (id: string) => RATINGS[id.charCodeAt(id.length - 1) % RATINGS.length];
-const acceptingNew = (id: string) => id.charCodeAt(id.length - 1) % 3 !== 2;
+const starRating     = (id: string) => RATINGS[id.charCodeAt(id.length - 1) % RATINGS.length];
+const acceptingNew   = (id: string) => id.charCodeAt(id.length - 1) % 3 !== 2;
 
 function timeOfDay() {
   const h = new Date().getHours();
-  if (h < 12) return 'morning';
-  if (h < 17) return 'afternoon';
-  return 'evening';
+  return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
 }
 
-// Derive 4-5 contextual continuation chips from a query + suggestions
 function buildContinuations(query: string, suggestions: string[]): string[] {
   const q = query.toLowerCase();
   const extras: string[] = [];
@@ -92,11 +67,10 @@ function buildContinuations(query: string, suggestions: string[]): string[] {
   if (q.includes('mental') || q.includes('anxiety'))   extras.push('Types of therapy', 'Virtual counseling', 'Crisis resources');
   if (q.includes('lab') || q.includes('imaging'))      extras.push('Order lab work', 'View test results', 'What to expect');
   if (q.includes('bill') || q.includes('pay'))         extras.push('Payment plans', 'Financial assistance', 'Insurance accepted');
-  const combined = [...new Set([...suggestions, ...extras])];
-  return combined.slice(0, 5);
+  return [...new Set([...suggestions, ...extras])].slice(0, 5);
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Cards ───────────────────────────────────────────────────────────────────
 
 function DoctorCard({ doctor, index }: { doctor: Doctor; index: number }) {
   const available = nextAvailable(doctor.id);
@@ -104,36 +78,30 @@ function DoctorCard({ doctor, index }: { doctor: Doctor; index: number }) {
   const accepting = acceptingNew(doctor.id);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.05 + index * 0.06, duration: 0.3 }}
-      className="flex items-start gap-4 p-5 bg-white border border-border rounded-2xl hover:shadow-md transition-shadow"
+      transition={{ delay: 0.04 + index * 0.05, duration: 0.22 }}
+      className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-xl hover:border-endeavor-blue/25 hover:shadow-sm transition-all"
     >
-      <img src={doctor.photoUrl} alt={doctor.name} className="w-14 h-14 rounded-full object-cover border border-border shrink-0" />
+      <img src={doctor.photoUrl} alt={doctor.name} className="w-11 h-11 rounded-full object-cover shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 flex-wrap">
-          <div>
-            <h3 className="font-semibold text-primary text-base leading-tight">{doctor.name}</h3>
-            <p className="text-sm text-neutral-500 mt-0.5">{doctor.specialty}</p>
-          </div>
-          <div className="flex items-center gap-1 text-sm shrink-0">
-            <Star className="w-3.5 h-3.5 fill-endeavor-gold text-endeavor-gold" />
-            <span className="font-medium text-neutral-700">{rating}</span>
-          </div>
-        </div>
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-gray-900 text-sm leading-tight">{doctor.name}</p>
           {accepting && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-2.5 py-0.5">
-              <CheckCircle2 className="w-3 h-3" />Accepting new patients
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-green-700 bg-green-50 rounded-full px-2 py-0.5">
+              <CheckCircle2 className="w-2.5 h-2.5" /> Accepting
             </span>
           )}
-          <span className="inline-flex items-center gap-1 text-xs text-neutral-500">
-            <CalendarDays className="w-3.5 h-3.5 text-endeavor-blue" />
-            Next available: <span className="font-medium text-neutral-700 ml-0.5">{available}</span>
+        </div>
+        <p className="text-xs text-gray-500 mt-0.5">{doctor.specialty}</p>
+        <div className="flex items-center gap-3 mt-1">
+          <span className="flex items-center gap-0.5 text-[11px] text-gray-400">
+            <Star className="w-2.5 h-2.5 fill-endeavor-gold text-endeavor-gold" /> {rating}
           </span>
+          <span className="text-[11px] text-gray-400">Next: <span className="text-gray-600">{available}</span></span>
         </div>
       </div>
-      <button className="shrink-0 px-4 py-2 bg-endeavor-gold text-endeavor-navy rounded-full text-sm font-bold hover:opacity-90 transition-opacity self-center">
+      <button className="shrink-0 px-3.5 py-1.5 bg-endeavor-gold text-endeavor-navy rounded-full text-xs font-bold hover:opacity-90 transition-opacity">
         Schedule
       </button>
     </motion.div>
@@ -144,47 +112,33 @@ function LocationCard({ location, index }: { location: Location; index: number }
   const status = locationStatus(location.id);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.08 + index * 0.06, duration: 0.3 }}
-      className="flex items-start gap-4 p-5 bg-white border border-border rounded-2xl hover:shadow-md transition-shadow"
+      transition={{ delay: 0.06 + index * 0.05, duration: 0.22 }}
+      className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-xl hover:border-endeavor-blue/25 hover:shadow-sm transition-all"
     >
-      <div className="w-10 h-10 rounded-full bg-endeavor-ice flex items-center justify-center shrink-0 mt-0.5">
+      <div className="w-9 h-9 rounded-lg bg-[#E1F5FC] flex items-center justify-center shrink-0">
         <MapPin className="w-4 h-4 text-endeavor-blue" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-primary text-base leading-tight">{location.name}</h3>
-        <p className="text-sm text-neutral-500 mt-0.5">{location.address} · {location.distance}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${status.open ? 'text-green-700' : 'text-neutral-500'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${status.open ? 'bg-green-500' : 'bg-neutral-400'}`} />
-            {status.label} · {location.hours}
+        <p className="font-semibold text-gray-900 text-sm leading-tight">{location.name}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{location.address} · {location.distance}</p>
+        <div className="flex items-center gap-3 mt-1">
+          <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${status.open ? 'text-green-700' : 'text-gray-400'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${status.open ? 'bg-green-500' : 'bg-gray-300'}`} />
+            {status.label}
           </span>
           {status.wait && (
-            <span className="inline-flex items-center gap-1 text-xs text-neutral-500">
-              <Clock className="w-3 h-3" />
-              Est. wait: <span className="font-medium text-neutral-700 ml-0.5">{status.wait}</span>
+            <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5" /> {status.wait} wait
             </span>
           )}
         </div>
       </div>
-      <button className="shrink-0 px-4 py-2 bg-white border border-border text-endeavor-navy rounded-full text-sm font-bold hover:bg-endeavor-lavender transition-colors self-center">
+      <button className="shrink-0 px-3.5 py-1.5 border border-gray-200 text-gray-500 rounded-full text-xs font-medium hover:border-endeavor-blue/30 hover:text-endeavor-blue transition-colors">
         Directions
       </button>
     </motion.div>
-  );
-}
-
-function SectionHeading({ label, count }: { label: string; count?: number }) {
-  return (
-    <div className="flex items-center justify-between mb-3">
-      <h2 className="text-xs font-bold text-endeavor-navy uppercase tracking-wider">
-        {label}{count !== undefined && <span className="ml-1 text-neutral-400">({count})</span>}
-      </h2>
-      <button className="text-xs text-endeavor-blue hover:underline flex items-center gap-0.5">
-        See all <ArrowUpRight className="w-3 h-3" />
-      </button>
-    </div>
   );
 }
 
@@ -192,30 +146,23 @@ function SectionHeading({ label, count }: { label: string; count?: number }) {
 
 export function Search() {
   const [query, setQuery]             = useState('');
+  const [followUp, setFollowUp]       = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [response, setResponse]       = useState<SearchResponse | null>(null);
-  const [activeTab, setActiveTab]     = useState('all');
-  const [scrolled, setScrolled]       = useState(false);
   const [isLoggedIn, setIsLoggedIn]   = useState(false);
-  const resultsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = async (newQuery: string) => {
     if (!newQuery.trim()) return;
     setQuery(newQuery);
     setIsSearching(true);
     setHasSearched(true);
-    setActiveTab('all');
+    setFollowUp('');
+    window.scrollTo({ top: 0 });
     const res = await performSearch(newQuery);
     setResponse(res);
     setIsSearching(false);
-    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
   const handleClearSearch = () => {
@@ -223,7 +170,11 @@ export function Search() {
     setIsSearching(false);
     setResponse(null);
     setQuery('');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleFollowUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (followUp.trim()) handleSearch(followUp.trim());
   };
 
   const continuationChips = useMemo(
@@ -231,73 +182,58 @@ export function Search() {
     [response, query]
   );
 
-  const resultSummary = useMemo(() => {
-    if (!response) return '';
-    const parts: string[] = [];
-    if (response.matchedDoctors.length)   parts.push(`${response.matchedDoctors.length} provider${response.matchedDoctors.length > 1 ? 's' : ''}`);
-    if (response.matchedLocations.length) parts.push(`${response.matchedLocations.length} location${response.matchedLocations.length > 1 ? 's' : ''}`);
-    if (response.results.length)          parts.push(`${response.results.length} service${response.results.length > 1 ? 's' : ''}`);
-    return parts.join(' · ');
-  }, [response]);
-
-  const filteredResults = useMemo(() => {
-    if (!response) return [];
-    if (activeTab === 'all') return response.results;
-    if (activeTab === 'services') return response.results.filter(r => r.doc.category.includes('Services') || r.doc.category.includes('Specialty Care'));
-    if (activeTab === 'locations') return response.results.filter(r => r.doc.category === 'Locations');
-    return response.results;
-  }, [response, activeTab]);
-
-  const tabs: Tab[] = useMemo(() => {
-    if (!response) return [];
-    return [
-      { id: 'all',       label: 'All' },
-      { id: 'doctors',   label: 'Doctors',   count: response.matchedDoctors.length },
-      { id: 'locations', label: 'Locations', count: response.matchedLocations.length },
-      { id: 'services',  label: 'Services',  count: response.results.filter(r => r.doc.category.includes('Services') || r.doc.category.includes('Specialty Care')).length },
-      { id: 'articles',  label: 'Articles' },
-    ];
+  // Resolve citation IDs to page titles for the AI answer
+  const citationDocs = useMemo(() => {
+    if (!response?.answer) return [];
+    return response.answer.citations
+      .map(id => allPages.find(p => p.id === id))
+      .filter(Boolean) as typeof allPages;
   }, [response]);
 
   return (
-    <div className="min-h-screen bg-[#F4F6FB] text-primary font-sans selection:bg-highlight selection:text-primary">
+    <div className="min-h-screen bg-white text-gray-900 font-sans">
 
-      {/* ── Utility bar ── */}
-      <div className="bg-endeavor-navy text-white text-sm py-2.5 px-4 hidden md:block">
-        <div className="max-w-7xl mx-auto flex items-center justify-end gap-6">
-          {['Find a doctor', 'Locations', 'Careers', 'Give', 'Patient portal'].map(label => (
-            <a key={label} href="#" onClick={e => e.preventDefault()} className="text-white/75 hover:text-endeavor-gold transition-colors">{label}</a>
-          ))}
-        </div>
-      </div>
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
 
-      {/* ── Nav ── */}
-      <nav className={`sticky top-0 z-40 transition-all duration-300 ${scrolled || hasSearched ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-4 h-[60px] flex items-center justify-between gap-6">
-          <button onClick={handleClearSearch} className={`font-display text-xl font-bold tracking-tight shrink-0 ${scrolled || hasSearched ? 'text-endeavor-navy' : 'text-white'}`}>
-            <span className="text-endeavor-blue">Happy</span> <span>Health</span>
+          {/* Logo */}
+          <button onClick={handleClearSearch} className="font-display font-bold text-[15px] shrink-0">
+            <span className="text-endeavor-blue">Happy</span>
+            <span className="text-endeavor-navy">Health</span>
           </button>
-          <div className="hidden lg:flex items-center gap-6">
-            {navLinks.map(link => (
-              <a key={link} href="#" onClick={e => e.preventDefault()} className={`text-sm font-medium hover:text-endeavor-blue transition-colors ${scrolled || hasSearched ? 'text-neutral-700' : 'text-white'}`}>{link}</a>
-            ))}
-          </div>
+
+          {/* Search bar appears in header once results are showing */}
+          <AnimatePresence>
+            {hasSearched && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="flex-1"
+              >
+                <SearchBar
+                  initialQuery={query}
+                  onSearch={handleSearch}
+                  isHero={false}
+                  isLoading={isSearching}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {!hasSearched && <div className="flex-1" />}
+
           {/* Sign in / avatar */}
           <button
             onClick={() => setIsLoggedIn(v => !v)}
-            className={`flex items-center gap-2 text-sm font-medium transition-colors shrink-0 ${
-              isLoggedIn
-                ? 'text-endeavor-navy'
-                : scrolled || hasSearched ? 'text-neutral-600 hover:text-endeavor-blue' : 'text-white/80 hover:text-white'
-            }`}
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors shrink-0"
           >
             {isLoggedIn ? (
-              <>
-                <span className="w-8 h-8 rounded-full bg-endeavor-gold text-endeavor-navy font-bold text-xs flex items-center justify-center select-none">
-                  {MOCK_USER.initials}
-                </span>
-                <span className="hidden sm:inline text-neutral-700">{MOCK_USER.firstName}</span>
-              </>
+              <span className="w-7 h-7 rounded-full bg-endeavor-gold text-endeavor-navy font-bold text-xs flex items-center justify-center select-none">
+                {MOCK_USER.initials}
+              </span>
             ) : (
               <>
                 <LogIn className="w-4 h-4" />
@@ -306,347 +242,250 @@ export function Search() {
             )}
           </button>
         </div>
-      </nav>
+      </header>
 
-      {/* ── Hero ── */}
-      <motion.section
-        className="bg-endeavor-navy relative overflow-hidden -mt-[60px]"
-        animate={hasSearched ? 'compact' : 'expanded'}
-        variants={{
-          expanded: { paddingTop: '120px', paddingBottom: '56px' },
-          compact:  { paddingTop: '80px',  paddingBottom: '24px' },
-        }}
-        transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0c1e50] via-endeavor-navy to-[#183580] pointer-events-none" />
-        <div className="absolute inset-0 opacity-[0.035] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-
-        <div className="relative max-w-2xl mx-auto px-4 text-center">
-
-          {/* ── Full hero headline ── */}
-          <AnimatePresence>
-            {!hasSearched && (
-              <motion.div key="hero-headline" initial={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} transition={{ duration: 0.28, ease: 'easeIn' }}>
-                <p className="text-endeavor-gold text-xs font-bold uppercase tracking-widest mb-4">Your care, your way</p>
-                <h1 className="font-display text-4xl sm:text-[52px] font-normal text-white leading-tight mb-4">
-                  Find the{' '}
-                  <em className="font-serif" style={{ fontStyle: 'italic', color: '#FFCF30' }}>care you need</em>, today.
-                </h1>
-                <p className="text-white/65 text-base sm:text-lg mb-8 leading-relaxed">
-                  Tell us what's going on. We'll connect you to the right care.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ── Post-search context strip (above search bar) ── */}
-          <AnimatePresence>
-            {hasSearched && (
-              <motion.div
-                key="context-strip"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="mb-4 text-center"
-              >
-                {isLoggedIn ? (
-                  <div className="inline-flex flex-col items-center gap-1">
-                    <span className="text-white/50 text-xs font-bold uppercase tracking-widest">
-                      Good {timeOfDay()}, {MOCK_USER.firstName}
-                    </span>
-                    {!isSearching && resultSummary && (
-                      <span className="inline-flex items-center gap-1.5 text-sm text-white/80">
-                        <Sparkles className="w-3.5 h-3.5 text-endeavor-gold" />
-                        {resultSummary} found
-                        <span className="text-white/40 mx-1">·</span>
-                        <span className="text-endeavor-gold font-medium">matched to your care history</span>
-                      </span>
-                    )}
-                    {isSearching && (
-                      <span className="text-sm text-white/50">Searching for you…</span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="inline-flex flex-col items-center gap-1">
-                    <span className="text-white/40 text-xs font-bold uppercase tracking-widest">Showing results</span>
-                    {!isSearching && resultSummary && (
-                      <span className="text-sm text-white/70">{resultSummary} found near you</span>
-                    )}
-                    {isSearching && (
-                      <span className="text-sm text-white/50">Searching…</span>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Search bar */}
-          <SearchBar initialQuery={query} onSearch={handleSearch} isHero={!hasSearched} isLoading={isSearching} />
-
-          {/* ── Pre-search common chips ── */}
-          <AnimatePresence mode="wait">
-            {!hasSearched && (
-              <motion.div key="popular" initial={{ opacity: 1 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }} className="mt-5">
-                <p className="text-white/40 text-xs font-bold uppercase tracking-wider mb-3">Common searches</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {patientSearches.map(q => (
-                    <button key={q} onClick={() => handleSearch(q)} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-full text-sm text-white/75 hover:text-white transition-colors">{q}</button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* ── Post-search continuation chips (below search bar) ── */}
-            {hasSearched && (
-              <motion.div
-                key="continuations"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3, delay: 0.35 }}
-                className="mt-4"
-              >
-                {!isSearching && continuationChips.length > 0 && (
-                  <>
-                    <p className="text-white/35 text-xs font-bold uppercase tracking-wider mb-2.5">Try also</p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {continuationChips.map(chip => (
-                        <button
-                          key={chip}
-                          onClick={() => handleSearch(chip)}
-                          className="px-3 py-1 bg-white/10 hover:bg-white/20 border border-white/15 rounded-full text-xs text-white/70 hover:text-white transition-colors"
-                        >
-                          {chip}
-                        </button>
-                      ))}
-                      <button onClick={handleClearSearch} className="px-3 py-1 rounded-full text-xs text-white/35 hover:text-white/60 transition-colors">
-                        ← Home
-                      </button>
-                    </div>
-                  </>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.section>
-
-      {/* ── Dynamic content area ── */}
+      {/* ── Page content ── */}
       <AnimatePresence mode="wait">
 
-        {/* ── HOMEPAGE ── */}
+        {/* ── HOME ── */}
         {!hasSearched && (
-          <motion.div key="homepage" initial={{ opacity: 1 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.25 }}>
+          <motion.div
+            key="home"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18 }}
+            className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] px-4 py-16"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="w-full max-w-xl"
+            >
+              <h1 className="font-display text-3xl sm:text-[38px] font-semibold text-endeavor-navy text-center mb-2 leading-tight">
+                Find the care you need
+              </h1>
+              <p className="text-gray-400 text-base text-center mb-7">
+                Search for doctors, locations, conditions, and more.
+              </p>
 
-            {/* Logged-in personal strip */}
-            <AnimatePresence>
-              {isLoggedIn && (
-                <motion.section
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.35 }}
-                  className="bg-endeavor-periwinkle border-b border-endeavor-blue/10 overflow-hidden"
-                >
-                  <div className="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-endeavor-gold text-endeavor-navy font-bold text-sm flex items-center justify-center shrink-0 select-none">
-                        {MOCK_USER.initials}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-endeavor-navy">Good {timeOfDay()}, {MOCK_USER.firstName}</p>
-                        <p className="text-xs text-neutral-500">
-                          Next: <span className="font-medium text-endeavor-navy">{MOCK_USER.upcomingAppointment.type}</span> with {MOCK_USER.upcomingAppointment.doctor} · {MOCK_USER.upcomingAppointment.date} at {MOCK_USER.upcomingAppointment.time}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-neutral-500 mr-1 hidden sm:inline">Recent:</span>
-                      {MOCK_USER.recentSearches.map(s => (
-                        <button key={s} onClick={() => handleSearch(s)} className="px-3 py-1 bg-white border border-border rounded-full text-xs text-neutral-600 hover:border-endeavor-blue/30 hover:text-endeavor-blue transition-colors">
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </motion.section>
-              )}
-            </AnimatePresence>
+              <SearchBar onSearch={handleSearch} isHero isLoading={false} />
 
-            {/* Care categories */}
-            <section className="bg-white border-b border-border">
-              <div className="max-w-5xl mx-auto px-4 py-10">
-                <p className="text-xs font-bold text-endeavor-navy uppercase tracking-widest mb-1">What kind of care do you need?</p>
-                <div className="flex items-end justify-between mb-6">
-                  <h2 className="font-display text-2xl font-normal text-endeavor-navy">Find care that fits your life</h2>
-                  <a href="#" onClick={e => e.preventDefault()} className="text-sm text-endeavor-blue hover:underline hidden sm:flex items-center gap-1">All services <ChevronRight className="w-3.5 h-3.5" /></a>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {careCategories.map(({ icon: Icon, label, query: q, note }, i) => (
-                    <motion.button key={label} onClick={() => handleSearch(q)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                      className="group flex flex-col items-center gap-3 p-4 bg-white border border-border rounded-2xl hover:border-endeavor-blue/30 hover:shadow-md transition-all text-center">
-                      <div className="w-12 h-12 rounded-full bg-endeavor-ice group-hover:bg-endeavor-blue/10 flex items-center justify-center transition-colors">
-                        <Icon className="w-5 h-5 text-endeavor-blue" strokeWidth={1.6} />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-endeavor-navy leading-tight">{label}</div>
-                        <div className="text-xs text-neutral-400 mt-0.5 leading-tight">{note}</div>
-                      </div>
-                    </motion.button>
+              {/* Logged-in appointment card */}
+              <AnimatePresence>
+                {isLoggedIn && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="mt-5 p-4 bg-[#F3F7FF] border border-endeavor-blue/10 rounded-xl flex items-center gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-endeavor-gold text-endeavor-navy font-bold text-xs flex items-center justify-center shrink-0">
+                      {MOCK_USER.initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">Good {timeOfDay()}, {MOCK_USER.firstName}</p>
+                      <p className="text-xs text-gray-500 truncate">
+                        Next: <span className="font-medium text-gray-700">{MOCK_USER.upcomingAppointment.type}</span> · {MOCK_USER.upcomingAppointment.date} at {MOCK_USER.upcomingAppointment.time}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Example / recent chips */}
+              <div className="mt-5 text-center">
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2.5">
+                  {isLoggedIn ? 'Recent searches' : 'Try searching for'}
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {(isLoggedIn ? MOCK_USER.recentSearches : patientSearches).map(q => (
+                    <button
+                      key={q}
+                      onClick={() => handleSearch(q)}
+                      className="px-3.5 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-endeavor-blue/40 hover:text-endeavor-blue transition-colors"
+                    >
+                      {q}
+                    </button>
                   ))}
                 </div>
               </div>
-            </section>
-
-            {/* Stats */}
-            <section className="bg-white border-b border-border">
-              <div className="max-w-5xl mx-auto px-4 py-10">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-                  {[{ value: '46', label: 'Immediate Care locations' }, { value: '300+', label: 'Care sites' }, { value: '9', label: 'Hospitals' }, { value: '6k+', label: 'Physicians & APPs' }].map(({ value, label }) => (
-                    <div key={label}>
-                      <div className="font-display text-4xl sm:text-5xl font-bold text-endeavor-navy mb-1">{value}</div>
-                      <div className="text-sm text-neutral-500">{label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* CTA banner */}
-            <section className="bg-endeavor-blue py-14">
-              <div className="max-w-2xl mx-auto px-4 text-center">
-                <h2 className="font-display text-3xl sm:text-4xl font-normal text-white mb-3">
-                  United with one goal: <em className="font-serif" style={{ fontStyle: 'italic' }}>your best health</em>
-                </h2>
-                <p className="text-white/75 text-base mb-8 leading-relaxed">Pioneering, world-class care combined with a seamless, personal experience — every patient, every time.</p>
-                <button onClick={e => e.preventDefault()} className="px-8 py-3 bg-endeavor-gold text-endeavor-navy rounded-full font-bold text-sm hover:opacity-90 transition-opacity">
-                  Learn about Endeavor Health
-                </button>
-              </div>
-            </section>
+            </motion.div>
           </motion.div>
         )}
 
         {/* ── RESULTS ── */}
         {hasSearched && (
-          <motion.div key="results" ref={resultsRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38, delay: 0.18, ease: [0, 0, 0.2, 1] }}>
-            <div className="max-w-7xl mx-auto px-4 py-8">
+          <motion.div
+            key="results"
+            ref={contentRef}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22 }}
+            className="max-w-2xl mx-auto px-4 py-8 pb-28"
+          >
+            {/* Loading */}
+            {isSearching && (
+              <div>
+                <div className="h-5 w-44 bg-gray-100 rounded-full animate-pulse mb-6" />
+                <AnswerSkeleton />
+                <div className="mt-8"><ResultsListSkeleton /></div>
+              </div>
+            )}
 
-              {isSearching && (
-                <div className="max-w-3xl">
-                  <div className="h-7 w-56 bg-neutral-200 rounded-full animate-pulse mb-8" />
-                  <AnswerSkeleton />
-                  <div className="mt-8"><ResultsListSkeleton /></div>
+            {!isSearching && response && (
+              <div className="space-y-8">
+
+                {/* Query heading */}
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">{query}</h1>
+                  {isLoggedIn && (
+                    <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-1">
+                      <Sparkles className="w-3 h-3 text-endeavor-blue" />
+                      Personalized based on your care history
+                    </p>
+                  )}
                 </div>
-              )}
 
-              {!isSearching && response && (
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10 lg:gap-14 items-start">
-                  <div className="min-w-0 space-y-10">
+                {/* Did you mean */}
+                {response.didYouMean && (
+                  <p className="text-sm text-gray-500">
+                    Did you mean:{' '}
+                    <button onClick={() => handleSearch(response.didYouMean!)} className="text-endeavor-blue hover:underline italic">
+                      {response.didYouMean}
+                    </button>?
+                  </p>
+                )}
 
-                    <div>
-                      <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Search results</p>
-                      <h2 className="font-display text-2xl sm:text-3xl font-semibold text-endeavor-navy">"{query}"</h2>
+                {/* AI answer — prose style */}
+                {response.answer && response.confidence === 'high' && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Sparkles className="w-3.5 h-3.5 text-endeavor-blue" />
+                      <span className="text-xs font-semibold text-endeavor-blue uppercase tracking-wider">Quick answer</span>
                     </div>
-
-                    {response.didYouMean && (
-                      <div className="text-neutral-600 text-sm">
-                        Did you mean: <button onClick={() => handleSearch(response.didYouMean!)} className="text-endeavor-blue font-medium hover:underline italic">{response.didYouMean}</button>?
+                    <p className="text-gray-700 text-base leading-relaxed">{response.answer.answer}</p>
+                    {citationDocs.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        <span className="text-xs text-gray-400">Sources:</span>
+                        {citationDocs.map(doc => (
+                          <span key={doc.id} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 cursor-pointer transition-colors">
+                            <FileText className="w-3 h-3" />{doc.title}
+                          </span>
+                        ))}
                       </div>
                     )}
-
-                    <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-
-                    {activeTab === 'all' && (
-                      <div className="space-y-10">
-                        {response.answer && response.confidence === 'high' && <QuickAssistCard answer={response.answer} />}
-                        {response.confidence === 'low' && response.results.length > 0 && (
-                          <div className="p-4 bg-white border border-border rounded-xl text-neutral-600 text-sm">No direct answer found — showing the most relevant results below.</div>
-                        )}
-                        {response.confidence === 'zero' && (
-                          <div className="text-center py-14 border border-border rounded-2xl bg-white">
-                            <h2 className="font-display text-2xl font-normal mb-2 text-endeavor-navy">No matches found</h2>
-                            <p className="text-neutral-500">Try a different search or explore care options above.</p>
-                          </div>
-                        )}
-                        {response.matchedDoctors.length > 0 && (
-                          <div>
-                            <SectionHeading label="Providers" count={response.matchedDoctors.length} />
-                            <div className="space-y-3">{response.matchedDoctors.slice(0, 3).map((doc, i) => <DoctorCard key={doc.id} doctor={doc} index={i} />)}</div>
-                          </div>
-                        )}
-                        {response.matchedLocations.length > 0 && (
-                          <div>
-                            <SectionHeading label="Locations near you" count={response.matchedLocations.length} />
-                            <div className="space-y-3">{response.matchedLocations.slice(0, 3).map((loc, i) => <LocationCard key={loc.id} location={loc} index={i} />)}</div>
-                          </div>
-                        )}
-                        {filteredResults.length > 0 && (
-                          <div>
-                            <SectionHeading label="Services & resources" count={filteredResults.length} />
-                            <ResultsList results={filteredResults} query={query} />
-                          </div>
-                        )}
-                      </div>
+                    {response.answer.cta && (
+                      <button className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-endeavor-blue hover:text-endeavor-blueHover transition-colors">
+                        {response.answer.cta.label} <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
                     )}
-
-                    {activeTab === 'doctors' && (
-                      <div className="space-y-3">
-                        {response.matchedDoctors.length === 0
-                          ? <p className="py-8 text-neutral-500">No providers found matching "{query}".</p>
-                          : response.matchedDoctors.map((doc, i) => <DoctorCard key={doc.id} doctor={doc} index={i} />)}
-                      </div>
-                    )}
-
-                    {activeTab === 'locations' && (
-                      <div className="space-y-3">
-                        {response.matchedLocations.length === 0
-                          ? <p className="py-8 text-neutral-500">No locations found matching "{query}".</p>
-                          : response.matchedLocations.map((loc, i) => <LocationCard key={loc.id} location={loc} index={i} />)}
-                      </div>
-                    )}
-
-                    {(activeTab === 'services' || activeTab === 'articles') && (
-                      filteredResults.length === 0
-                        ? <p className="py-8 text-neutral-500">No {activeTab} found matching "{query}".</p>
-                        : <ResultsList results={filteredResults} query={query} />
-                    )}
+                    <hr className="mt-5 border-gray-100" />
                   </div>
+                )}
 
-                  {/* Right rail */}
-                  <div className="hidden lg:block sticky top-24">
-                    <RightRail
-                      query={query}
-                      topics={response.suggestions}
-                      doctors={response.matchedDoctors}
-                      locations={response.matchedLocations}
-                      conditions={response.matchedConditions}
-                      onTopicClick={handleSearch}
-                      isLoggedIn={isLoggedIn}
-                      user={isLoggedIn ? MOCK_USER : undefined}
-                    />
+                {/* Zero results */}
+                {response.confidence === 'zero' && (
+                  <div className="py-16 text-center">
+                    <p className="text-gray-400">No results found for "{query}".</p>
+                    <p className="text-sm text-gray-300 mt-1">Try a different search term.</p>
                   </div>
+                )}
 
-                  <div className="block lg:hidden mt-10 pt-10 border-t border-border">
-                    <RightRail
-                      query={query}
-                      topics={response.suggestions}
-                      doctors={response.matchedDoctors}
-                      locations={response.matchedLocations}
-                      conditions={response.matchedConditions}
-                      onTopicClick={handleSearch}
-                      isLoggedIn={isLoggedIn}
-                      user={isLoggedIn ? MOCK_USER : undefined}
-                    />
+                {/* Providers */}
+                {response.matchedDoctors.length > 0 && (
+                  <div>
+                    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                      Providers ({response.matchedDoctors.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {response.matchedDoctors.slice(0, 3).map((doc, i) => (
+                        <DoctorCard key={doc.id} doctor={doc} index={i} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+
+                {/* Locations */}
+                {response.matchedLocations.length > 0 && (
+                  <div>
+                    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                      Locations near you ({response.matchedLocations.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {response.matchedLocations.slice(0, 3).map((loc, i) => (
+                        <LocationCard key={loc.id} location={loc} index={i} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Resources */}
+                {response.results.length > 0 && (
+                  <div>
+                    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                      Resources ({response.results.length})
+                    </h2>
+                    <ResultsList results={response.results} query={query} />
+                  </div>
+                )}
+
+                {/* Follow-up suggestions — Perplexity-style list */}
+                {continuationChips.length > 0 && (
+                  <div>
+                    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Follow-ups</h2>
+                    <div className="space-y-1.5">
+                      {continuationChips.map(chip => (
+                        <button
+                          key={chip}
+                          onClick={() => handleSearch(chip)}
+                          className="w-full flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-100 rounded-xl text-sm text-gray-700 hover:border-endeavor-blue/30 hover:text-endeavor-blue text-left transition-all group"
+                        >
+                          <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-endeavor-blue shrink-0 transition-colors" />
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Fixed follow-up input (results only) ── */}
+      <AnimatePresence>
+        {hasSearched && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.22, delay: 0.25 }}
+            className="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur border-t border-gray-100 px-4 py-3"
+          >
+            <form onSubmit={handleFollowUp} className="max-w-2xl mx-auto flex gap-2 items-center">
+              <input
+                type="text"
+                value={followUp}
+                onChange={e => setFollowUp(e.target.value)}
+                placeholder="Ask a follow-up..."
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-endeavor-blue focus:bg-white transition-colors placeholder:text-gray-400"
+              />
+              <button
+                type="submit"
+                disabled={!followUp.trim()}
+                className="w-9 h-9 rounded-full bg-endeavor-blue flex items-center justify-center disabled:opacity-30 hover:bg-endeavor-blueHover transition-colors"
+              >
+                <Send className="w-4 h-4 text-white" />
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
