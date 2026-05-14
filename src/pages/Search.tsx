@@ -5,6 +5,7 @@ import { AnswerSkeleton, ResultsListSkeleton } from '../components/Skeletons';
 import { ConditionModule } from '../components/ConditionModule';
 import { ProcedureModule } from '../components/ProcedureModule';
 import { InsuranceModule } from '../components/InsuranceModule';
+import { HeroIllustration } from '../components/HeroIllustration';
 import { performSearch, SearchResponse } from '../lib/search';
 import { detectIntent, detectConditionKey, detectProcedureKey } from '../lib/intent';
 import { QueryIntent, conditionData, genericCondition, procedureData, genericProcedure, insuranceData } from '../data/healthcareData';
@@ -13,26 +14,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Star, MapPin, Clock, CheckCircle2, CalendarDays,
   LogIn, Sparkles, FileText, Send, ArrowRight, Filter,
-  Phone, MessageCircle,
+  Phone, MessageCircle, Copy,
 } from 'lucide-react';
 
-// ─── Prompt chips ─────────────────────────────────────────────────────────────
+// ─── Example queries (monospace pill style) ───────────────────────────────────
 
-const promptChips = [
-  'Find a primary care doctor near me',
-  'What could cause lower back pain?',
-  'Locations open this weekend',
-  'Prepare for my MRI',
-  'Is this covered by my insurance?',
+const exampleQueries = [
+  'find a primary care doctor near me',
+  'what causes lower back pain?',
+  'urgent care open right now',
+  'prepare for my MRI',
+  'is this covered by my insurance?',
 ];
 
 // ─── Doctor filter options ────────────────────────────────────────────────────
 
 const filterOptions = {
-  specialty: ['All Specialties', 'Primary Care', 'Cardiology', 'Dermatology', 'Orthopedics', 'Neurology', 'OB-GYN'],
+  specialty:    ['All Specialties', 'Primary Care', 'Cardiology', 'Dermatology', 'Orthopedics', 'Neurology', 'OB-GYN'],
   availability: ['Any Availability', 'Today', 'This Week', 'Accepting New Patients'],
-  language: ['All Languages', 'English', 'Spanish', 'Mandarin', 'Polish', 'Hindi'],
-  gender: ['Any Gender', 'Female', 'Male'],
+  language:     ['All Languages', 'English', 'Spanish', 'Mandarin', 'Polish', 'Hindi'],
+  gender:       ['Any Gender', 'Female', 'Male'],
 };
 
 // ─── Mock logged-in user ──────────────────────────────────────────────────────
@@ -41,7 +42,6 @@ const MOCK_USER = {
   firstName: 'Ryan',
   initials: 'RM',
   upcomingAppointment: {
-    doctor: 'Dr. Priya Patel',
     type: 'Annual wellness visit',
     date: 'Thu, May 15',
     time: '2:45 PM',
@@ -82,19 +82,19 @@ function DoctorCard({ doctor, index }: { doctor: Doctor; index: number }) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.04 + index * 0.06, duration: 0.22 }}
-      className="flex items-start gap-4 p-5 bg-white border border-gray-100 rounded-xl hover:border-endeavor-blue/25 hover:shadow-sm transition-all"
-      aria-label={`Dr. ${doctor.name}, ${doctor.specialty}`}
+      className="flex items-start gap-4 p-5 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100/70 transition-colors"
+      aria-label={`${doctor.name}, ${doctor.specialty}`}
     >
-      <img src={doctor.photoUrl} alt={doctor.name} className="w-14 h-14 rounded-full object-cover shrink-0" />
+      <img src={doctor.photoUrl} alt={doctor.name} className="w-12 h-12 rounded-full object-cover shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <p className="font-semibold text-gray-900 text-base leading-tight">{doctor.name}</p>
+            <p className="font-semibold text-gray-900 text-[15px] leading-tight">{doctor.name}</p>
             <p className="text-sm text-gray-500 mt-0.5">{doctor.specialty}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <Star className="w-3.5 h-3.5 fill-endeavor-gold text-endeavor-gold" aria-hidden="true" />
-            <span className="text-sm font-medium text-gray-600" aria-label={`${rating} stars`}>{rating}</span>
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+            <span className="text-sm text-gray-600" aria-label={`${rating} stars`}>{rating}</span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-2.5">
@@ -103,16 +103,18 @@ function DoctorCard({ doctor, index }: { doctor: Doctor; index: number }) {
               <CheckCircle2 className="w-3 h-3" aria-hidden="true" /> Accepting new patients
             </span>
           ) : (
-            <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2.5 py-1">Not accepting new patients</span>
+            <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2.5 py-1">
+              Not accepting new patients
+            </span>
           )}
           <span className="flex items-center gap-1 text-xs text-gray-500">
-            <CalendarDays className="w-3.5 h-3.5 text-endeavor-blue" aria-hidden="true" />
-            Next available: <span className="font-medium text-gray-700 ml-1">{available}</span>
+            <CalendarDays className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+            Next: <span className="font-medium text-gray-700 ml-1">{available}</span>
           </span>
         </div>
       </div>
       <button
-        className="shrink-0 px-4 py-2 bg-endeavor-gold text-endeavor-navy rounded-full text-sm font-bold hover:opacity-90 transition-opacity self-center"
+        className="shrink-0 px-4 py-2 bg-gray-900 text-white rounded-full text-sm font-semibold hover:bg-gray-700 transition-colors self-center"
         aria-label={`Book appointment with ${doctor.name}`}
       >
         Book
@@ -130,14 +132,14 @@ function LocationCard({ location, index }: { location: Location; index: number }
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.06 + index * 0.06, duration: 0.22 }}
-      className="flex items-start gap-4 p-5 bg-white border border-gray-100 rounded-xl hover:border-endeavor-blue/25 hover:shadow-sm transition-all"
+      className="flex items-start gap-4 p-5 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100/70 transition-colors"
       aria-label={location.name}
     >
-      <div className="w-10 h-10 rounded-xl bg-[#E1F5FC] flex items-center justify-center shrink-0">
-        <MapPin className="w-5 h-5 text-endeavor-blue" aria-hidden="true" />
+      <div className="w-9 h-9 rounded-xl bg-gray-200 flex items-center justify-center shrink-0">
+        <MapPin className="w-4 h-4 text-gray-600" aria-hidden="true" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 text-base leading-tight">{location.name}</p>
+        <p className="font-semibold text-gray-900 text-[15px] leading-tight">{location.name}</p>
         <p className="text-sm text-gray-500 mt-0.5">{location.address} · {location.distance}</p>
         <div className="flex flex-wrap items-center gap-3 mt-2">
           <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${status.open ? 'text-green-700' : 'text-gray-400'}`}>
@@ -153,10 +155,10 @@ function LocationCard({ location, index }: { location: Location; index: number }
         </div>
       </div>
       <div className="flex flex-col gap-2 shrink-0 self-center">
-        <button className="px-3.5 py-1.5 bg-endeavor-gold text-endeavor-navy rounded-full text-xs font-bold hover:opacity-90 transition-opacity">
+        <button className="px-3.5 py-1.5 bg-gray-900 text-white rounded-full text-xs font-semibold hover:bg-gray-700 transition-colors">
           Check in
         </button>
-        <button className="px-3.5 py-1.5 border border-gray-200 text-gray-600 rounded-full text-xs font-medium hover:border-endeavor-blue/30 hover:text-endeavor-blue transition-colors">
+        <button className="px-3.5 py-1.5 border border-gray-200 text-gray-600 rounded-full text-xs font-medium hover:border-gray-400 transition-colors">
           Directions
         </button>
       </div>
@@ -168,28 +170,23 @@ function LocationCard({ location, index }: { location: Location; index: number }
 
 function DoctorFilterBar() {
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({
-    specialty: 'All Specialties',
+    specialty:    'All Specialties',
     availability: 'Any Availability',
-    language: 'All Languages',
-    gender: 'Any Gender',
+    language:     'All Languages',
+    gender:       'Any Gender',
   });
-
-  const toggle = (key: string, value: string) =>
-    setActiveFilters(prev => ({ ...prev, [key]: value }));
 
   return (
     <div className="flex flex-wrap gap-2 mb-4" role="toolbar" aria-label="Filter doctors">
       {Object.entries(filterOptions).map(([key, options]) => (
-        <div key={key} className="relative group">
+        <div key={key} className="relative">
           <select
             value={activeFilters[key]}
-            onChange={e => toggle(key, e.target.value)}
-            className="appearance-none pl-3 pr-7 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-700 cursor-pointer hover:border-endeavor-blue/40 focus:outline-none focus:border-endeavor-blue transition-colors"
+            onChange={e => setActiveFilters(prev => ({ ...prev, [key]: e.target.value }))}
+            className="appearance-none pl-3 pr-7 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-700 cursor-pointer hover:border-gray-400 focus:outline-none transition-colors"
             aria-label={`Filter by ${key}`}
           >
-            {options.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
+            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
           <Filter className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" aria-hidden="true" />
         </div>
@@ -198,39 +195,41 @@ function DoctorFilterBar() {
   );
 }
 
-// ─── No results / fallback ────────────────────────────────────────────────────
+// ─── No results ───────────────────────────────────────────────────────────────
 
 function NoResults({ onSearch }: { onSearch: (q: string) => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="py-12 text-center space-y-6"
+      className="py-14 text-center space-y-6"
     >
       <div>
-        <p className="text-lg font-semibold text-gray-700">No results found</p>
-        <p className="text-sm text-gray-400 mt-1">Try a different search, or reach out directly.</p>
+        <p className="text-lg font-semibold text-gray-800">No results found</p>
+        <p className="text-sm text-gray-400 mt-1">Try rephrasing, or reach out directly.</p>
       </div>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <a
           href="tel:+1-800-555-0100"
-          className="inline-flex items-center gap-2 px-5 py-3 bg-endeavor-gold text-endeavor-navy rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-2 px-5 py-3 bg-gray-900 text-white rounded-full text-sm font-semibold hover:bg-gray-700 transition-colors"
         >
           <Phone className="w-4 h-4" aria-hidden="true" /> Nurse advice line
         </a>
         <button
           onClick={() => onSearch('urgent care near me')}
-          className="inline-flex items-center gap-2 px-5 py-3 border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:border-endeavor-blue/40 hover:text-endeavor-blue transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-3 bg-gray-50 border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
         >
           <MessageCircle className="w-4 h-4" aria-hidden="true" /> Urgent care locations
         </button>
       </div>
-      <p className="text-xs text-gray-400">Or try: "chest pain," "find a cardiologist," "prepare for MRI"</p>
+      <p className="text-xs text-gray-400 font-mono">
+        Try: "chest pain" · "find a cardiologist" · "prepare for MRI"
+      </p>
     </motion.div>
   );
 }
 
-// ─── General AI answer (for non-specialized results) ─────────────────────────
+// ─── General AI answer ────────────────────────────────────────────────────────
 
 function GeneralAnswer({ text, citations, cta, onSearch, suggestions }: {
   text: string;
@@ -242,22 +241,25 @@ function GeneralAnswer({ text, citations, cta, onSearch, suggestions }: {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-1.5">
-        <Sparkles className="w-3.5 h-3.5 text-endeavor-blue" aria-hidden="true" />
-        <span className="text-xs font-semibold text-endeavor-blue uppercase tracking-wider">Quick answer</span>
+        <Sparkles className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Answer</span>
       </div>
       <p className="text-[17px] text-gray-700 leading-relaxed">{text}</p>
       {citations.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-gray-400">Sources:</span>
           {citations.map(doc => (
-            <span key={doc.id} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 cursor-pointer transition-colors">
+            <span
+              key={doc.id}
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 cursor-pointer transition-colors"
+            >
               <FileText className="w-3 h-3" aria-hidden="true" />{doc.title}
             </span>
           ))}
         </div>
       )}
       {cta && (
-        <button className="inline-flex items-center gap-1.5 text-sm font-medium text-endeavor-blue hover:text-endeavor-blueHover transition-colors">
+        <button className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-900 underline underline-offset-2 hover:text-gray-600 transition-colors">
           {cta.label} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       )}
@@ -265,17 +267,27 @@ function GeneralAnswer({ text, citations, cta, onSearch, suggestions }: {
   );
 }
 
+// ─── Section label ────────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+      {children}
+    </h2>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function Search() {
-  const [query, setQuery]       = useState('');
-  const [followUp, setFollowUp] = useState('');
+  const [query, setQuery]           = useState('');
+  const [followUp, setFollowUp]     = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [response, setResponse] = useState<SearchResponse | null>(null);
-  const [intent, setIntent]     = useState<QueryIntent>('general');
-  const [condKey, setCondKey]   = useState('generic');
-  const [procKey, setProcKey]   = useState('generic');
+  const [response, setResponse]     = useState<SearchResponse | null>(null);
+  const [intent, setIntent]         = useState<QueryIntent>('general');
+  const [condKey, setCondKey]       = useState('generic');
+  const [procKey, setProcKey]       = useState('generic');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -314,33 +326,28 @@ export function Search() {
       .filter(Boolean) as typeof allPages;
   }, [response]);
 
-  const generalFollowUps = useMemo(() => {
-    if (!response) return [];
-    return response.suggestions.slice(0, 5);
-  }, [response]);
+  const generalFollowUps = useMemo(() => response?.suggestions.slice(0, 5) ?? [], [response]);
 
-  // Resolve which condition/procedure data to show
-  const condData    = conditionData[condKey]  ?? genericCondition;
-  const procData    = procedureData[procKey]  ?? genericProcedure;
+  const condData = conditionData[condKey] ?? genericCondition;
+  const procData = procedureData[procKey] ?? genericProcedure;
 
-  const showDoctors    = (intent === 'find-doctor' || intent === 'general') && (response?.matchedDoctors.length ?? 0) > 0;
-  const showLocations  = (intent === 'find-location' || intent === 'general') && (response?.matchedLocations.length ?? 0) > 0;
-  const showResources  = intent === 'general' && (response?.results.length ?? 0) > 0;
-  const showNoResults  = !isSearching && response && response.confidence === 'zero';
+  const showDoctors   = (intent === 'find-doctor' || intent === 'general') && (response?.matchedDoctors.length ?? 0) > 0;
+  const showLocations = (intent === 'find-location' || intent === 'general') && (response?.matchedLocations.length ?? 0) > 0;
+  const showResources = intent === 'general' && (response?.results.length ?? 0) > 0;
+  const showNoResults = !isSearching && response && response.confidence === 'zero';
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100" role="banner">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100" role="banner">
+        <div className="max-w-2xl mx-auto px-5 h-14 flex items-center gap-4">
           <button
             onClick={handleClearSearch}
-            className="font-display font-bold text-[15px] shrink-0"
+            className="font-display font-bold text-[15px] text-gray-900 shrink-0 hover:text-gray-600 transition-colors"
             aria-label="Go to home"
           >
-            <span className="text-endeavor-blue">Happy</span>
-            <span className="text-endeavor-navy">Health</span>
+            HappyHealth
           </button>
 
           <AnimatePresence>
@@ -370,7 +377,10 @@ export function Search() {
             aria-label={isLoggedIn ? 'Signed in as Ryan' : 'Sign in'}
           >
             {isLoggedIn ? (
-              <span className="w-7 h-7 rounded-full bg-endeavor-gold text-endeavor-navy font-bold text-xs flex items-center justify-center select-none" aria-hidden="true">
+              <span
+                className="w-7 h-7 rounded-full bg-gray-900 text-white font-bold text-xs flex items-center justify-center select-none"
+                aria-hidden="true"
+              >
                 {MOCK_USER.initials}
               </span>
             ) : (
@@ -392,64 +402,75 @@ export function Search() {
             <motion.div
               key="home"
               initial={{ opacity: 1 }}
-              exit={{ opacity: 0, y: -6 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.18 }}
-              className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] px-4 py-16"
+              className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] px-5 py-20"
             >
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35 }}
-                className="w-full max-w-xl"
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+                className="w-full max-w-[480px]"
               >
-                <h1 className="font-display text-3xl sm:text-[38px] font-semibold text-endeavor-navy text-center mb-2 leading-tight">
-                  Find the care you need
-                </h1>
-                <p className="text-gray-400 text-base text-center mb-7">
-                  Search for doctors, locations, symptoms, procedures, and more.
+                {/* Illustration */}
+                <div className="flex justify-center mb-8">
+                  <HeroIllustration className="text-gray-200" />
+                </div>
+
+                {/* Caption */}
+                <p className="text-xs text-gray-400 text-center tracking-widest uppercase mb-5">
+                  Powered by Endeavor Health Clinical Library
                 </p>
 
+                {/* Headline */}
+                <h1 className="font-display text-[44px] sm:text-[56px] font-bold text-gray-950 text-center leading-[1.08] tracking-tight mb-10">
+                  The easiest way<br />to find care.
+                </h1>
+
+                {/* Search input */}
                 <SearchBar onSearch={handleSearch} isHero isLoading={false} />
 
-                {/* Logged-in appointment card */}
+                {/* Logged-in greeting */}
                 <AnimatePresence>
                   {isLoggedIn && (
                     <motion.div
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 0.22 }}
-                      className="mt-5 p-4 bg-[#F3F7FF] border border-endeavor-blue/10 rounded-xl flex items-center gap-3"
+                      transition={{ duration: 0.2 }}
+                      className="mt-4 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl flex items-center gap-3"
                     >
-                      <div className="w-8 h-8 rounded-full bg-endeavor-gold text-endeavor-navy font-bold text-xs flex items-center justify-center shrink-0">
+                      <div className="w-7 h-7 rounded-full bg-gray-900 text-white font-bold text-xs flex items-center justify-center shrink-0">
                         {MOCK_USER.initials}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">Good {timeOfDay()}, {MOCK_USER.firstName}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          Good {timeOfDay()}, {MOCK_USER.firstName}
+                        </p>
                         <p className="text-xs text-gray-500 truncate">
-                          Next: <span className="font-medium text-gray-700">{MOCK_USER.upcomingAppointment.type}</span> · {MOCK_USER.upcomingAppointment.date} at {MOCK_USER.upcomingAppointment.time}
+                          Next: <span className="font-medium text-gray-700">{MOCK_USER.upcomingAppointment.type}</span>
+                          {' '}· {MOCK_USER.upcomingAppointment.date} at {MOCK_USER.upcomingAppointment.time}
                         </p>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* Prompt chips */}
-                <div className="mt-6 text-center">
-                  <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">
-                    {isLoggedIn ? 'Recent searches' : 'Try asking'}
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {(isLoggedIn ? MOCK_USER.recentSearches : promptChips).map(q => (
-                      <button
-                        key={q}
-                        onClick={() => handleSearch(q)}
-                        className="px-3.5 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-endeavor-blue/40 hover:text-endeavor-blue transition-colors text-left"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
+                {/* Example query pills (monospace style) */}
+                <div className="mt-6 space-y-2">
+                  {(isLoggedIn ? MOCK_USER.recentSearches : exampleQueries).map((q, i) => (
+                    <motion.button
+                      key={q}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + i * 0.05, duration: 0.2 }}
+                      onClick={() => handleSearch(q)}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
+                    >
+                      <span className="font-mono text-sm text-gray-500 truncate">{q}</span>
+                      <Copy className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0" aria-hidden="true" />
+                    </motion.button>
+                  ))}
                 </div>
               </motion.div>
             </motion.div>
@@ -463,27 +484,27 @@ export function Search() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.22 }}
-              className="max-w-2xl mx-auto px-4 py-8 pb-32"
+              className="max-w-2xl mx-auto px-5 py-10 pb-36"
             >
 
-              {/* Loading */}
+              {/* Loading skeleton */}
               {isSearching && (
                 <div aria-live="polite" aria-label="Loading results">
-                  <div className="h-5 w-44 bg-gray-100 rounded-full animate-pulse mb-6" />
+                  <div className="h-8 w-56 bg-gray-100 rounded-full animate-pulse mb-8" />
                   <AnswerSkeleton />
-                  <div className="mt-8"><ResultsListSkeleton /></div>
+                  <div className="mt-10"><ResultsListSkeleton /></div>
                 </div>
               )}
 
               {!isSearching && response && (
-                <div className="space-y-8" aria-live="polite">
+                <div className="space-y-10" aria-live="polite">
 
                   {/* Query heading */}
                   <div>
-                    <h1 className="text-xl font-semibold text-gray-900">{query}</h1>
+                    <h1 className="text-[28px] sm:text-3xl font-bold text-gray-950 leading-tight">{query}</h1>
                     {isLoggedIn && (
-                      <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-1">
-                        <Sparkles className="w-3 h-3 text-endeavor-blue" aria-hidden="true" />
+                      <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
+                        <Sparkles className="w-3 h-3" aria-hidden="true" />
                         Personalized based on your care history
                       </p>
                     )}
@@ -493,7 +514,7 @@ export function Search() {
                   {response.didYouMean && (
                     <p className="text-sm text-gray-500">
                       Did you mean:{' '}
-                      <button onClick={() => handleSearch(response.didYouMean!)} className="text-endeavor-blue hover:underline italic">
+                      <button onClick={() => handleSearch(response.didYouMean!)} className="underline underline-offset-2 italic hover:text-gray-800 transition-colors">
                         {response.didYouMean}
                       </button>?
                     </p>
@@ -514,7 +535,7 @@ export function Search() {
                     <InsuranceModule data={insuranceData} onSearch={handleSearch} />
                   )}
 
-                  {/* ── Find doctor or general: AI answer ── */}
+                  {/* ── General: AI answer ── */}
                   {(intent === 'find-doctor' || intent === 'find-location' || intent === 'general') && response.answer && response.confidence === 'high' && (
                     <GeneralAnswer
                       text={response.answer.answer}
@@ -528,11 +549,9 @@ export function Search() {
                   {/* ── Doctors ── */}
                   {showDoctors && (
                     <div>
-                      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                        Providers ({response!.matchedDoctors.length})
-                      </h2>
+                      <SectionLabel>Providers ({response!.matchedDoctors.length})</SectionLabel>
                       {intent === 'find-doctor' && <DoctorFilterBar />}
-                      <div className="space-y-3">
+                      <div className="space-y-2.5">
                         {response!.matchedDoctors.map((doc, i) => (
                           <DoctorCard key={doc.id} doctor={doc} index={i} />
                         ))}
@@ -543,10 +562,8 @@ export function Search() {
                   {/* ── Locations ── */}
                   {showLocations && (
                     <div>
-                      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                        Locations near you ({response!.matchedLocations.length})
-                      </h2>
-                      <div className="space-y-3">
+                      <SectionLabel>Locations near you ({response!.matchedLocations.length})</SectionLabel>
+                      <div className="space-y-2.5">
                         {response!.matchedLocations.map((loc, i) => (
                           <LocationCard key={loc.id} location={loc} index={i} />
                         ))}
@@ -557,25 +574,23 @@ export function Search() {
                   {/* ── Resources ── */}
                   {showResources && (
                     <div>
-                      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                        Resources ({response!.results.length})
-                      </h2>
+                      <SectionLabel>Resources ({response!.results.length})</SectionLabel>
                       <ResultsList results={response!.results} query={query} />
                     </div>
                   )}
 
-                  {/* ── General follow-ups (non-specialized) ── */}
+                  {/* ── General follow-ups ── */}
                   {intent === 'general' && generalFollowUps.length > 0 && (
                     <div>
-                      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Follow-ups</h2>
+                      <SectionLabel>Related questions</SectionLabel>
                       <div className="space-y-1.5">
                         {generalFollowUps.map(chip => (
                           <button
                             key={chip}
                             onClick={() => handleSearch(chip)}
-                            className="w-full flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-100 rounded-xl text-[15px] text-gray-700 hover:border-endeavor-blue/30 hover:text-endeavor-blue text-left transition-all group"
+                            className="w-full flex items-center gap-2.5 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-[15px] text-gray-700 hover:bg-gray-100 text-left transition-all group"
                           >
-                            <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-endeavor-blue shrink-0 transition-colors" aria-hidden="true" />
+                            <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-600 shrink-0 transition-colors" aria-hidden="true" />
                             {chip}
                           </button>
                         ))}
@@ -587,9 +602,9 @@ export function Search() {
                   {showNoResults && <NoResults onSearch={handleSearch} />}
 
                   {/* ── Disclaimer ── */}
-                  <footer className="pt-4 border-t border-gray-100" role="contentinfo">
+                  <footer className="pt-6 border-t border-gray-100" role="contentinfo">
                     <p className="text-xs text-gray-400 leading-relaxed">
-                      This information is for educational purposes only and is not medical advice. Always consult a qualified healthcare provider for diagnosis, treatment, or guidance specific to your condition. In an emergency, call 911.
+                      AI-generated answer. Not medical advice — consult a clinician. Verify critical facts with a qualified healthcare provider. In an emergency, call 911.
                     </p>
                   </footer>
 
@@ -607,8 +622,8 @@ export function Search() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.22, delay: 0.25 }}
-            className="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur border-t border-gray-100 px-4 py-3"
+            transition={{ duration: 0.22, delay: 0.2 }}
+            className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-5 py-3"
             role="complementary"
             aria-label="Ask a follow-up question"
           >
@@ -619,13 +634,13 @@ export function Search() {
                 onChange={e => setFollowUp(e.target.value)}
                 placeholder="Ask a follow-up..."
                 aria-label="Follow-up question"
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-endeavor-blue focus:bg-white transition-colors placeholder:text-gray-400"
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-gray-400 focus:bg-white transition-colors placeholder:text-gray-400"
               />
               <button
                 type="submit"
                 disabled={!followUp.trim()}
                 aria-label="Submit follow-up"
-                className="w-9 h-9 rounded-full bg-endeavor-blue flex items-center justify-center disabled:opacity-30 hover:bg-endeavor-blueHover transition-colors"
+                className="w-9 h-9 rounded-full bg-gray-900 flex items-center justify-center disabled:opacity-30 hover:bg-gray-700 transition-colors"
               >
                 <Send className="w-4 h-4 text-white" aria-hidden="true" />
               </button>

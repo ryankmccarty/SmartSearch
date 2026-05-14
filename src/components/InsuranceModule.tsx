@@ -18,28 +18,27 @@ export function InsuranceModule({ data, onSearch }: Props) {
       transition={{ duration: 0.25 }}
       className="space-y-6"
     >
-      {/* Summary */}
       <p className="text-[17px] leading-relaxed text-gray-700">{data.summary}</p>
 
-      {/* Quick CTA */}
       <div className="flex flex-col sm:flex-row gap-3">
         <a
           href="tel:+1-800-555-0100"
-          className="flex items-center justify-center gap-2 px-5 py-3 bg-endeavor-gold text-endeavor-navy rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
+          className="flex items-center justify-center gap-2 px-5 py-3 bg-gray-900 text-white rounded-full text-sm font-semibold hover:bg-gray-700 transition-colors"
         >
           <Phone className="w-4 h-4" aria-hidden="true" />
           Patient Financial Services
         </a>
-        <button className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:border-endeavor-blue/30 hover:text-endeavor-blue transition-colors">
+        <button className="flex items-center justify-center gap-2 px-5 py-3 bg-gray-50 border border-gray-100 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
           Online cost estimator →
         </button>
       </div>
 
       <hr className="border-gray-100" />
 
-      {/* FAQ accordion */}
       <div>
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Common Questions</h2>
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          Common Questions
+        </h2>
         <div className="space-y-2" role="list">
           {data.faqs.map((faq, i) => (
             <motion.div
@@ -76,18 +75,19 @@ export function InsuranceModule({ data, onSearch }: Props) {
         </div>
       </div>
 
-      {/* Follow-ups */}
       {data.followUps.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Follow-ups</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+            Related questions
+          </p>
           <div className="space-y-1.5">
             {data.followUps.map(q => (
               <button
                 key={q}
                 onClick={() => onSearch(q)}
-                className="w-full flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-100 rounded-xl text-[15px] text-gray-700 hover:border-endeavor-blue/30 hover:text-endeavor-blue text-left transition-all group"
+                className="w-full flex items-center gap-2.5 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-[15px] text-gray-700 hover:bg-gray-100 text-left transition-all group"
               >
-                <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-endeavor-blue shrink-0 transition-colors" aria-hidden="true" />
+                <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-600 shrink-0 transition-colors" aria-hidden="true" />
                 {q}
               </button>
             ))}
