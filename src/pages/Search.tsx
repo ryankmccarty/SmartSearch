@@ -346,14 +346,23 @@ export function Search() {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
 
-      {/* ── Always-visible sidebar toggle (below header, left edge) ── */}
-      <button
-        onClick={() => setSidebarOpen(v => !v)}
-        className="fixed top-[62px] left-3 z-40 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-      >
-        <PanelLeft className="w-4 h-4 text-gray-500" />
-      </button>
+      {/* ── Floating toggle — only when sidebar is closed ── */}
+      <AnimatePresence>
+        {!sidebarOpen && (
+          <motion.button
+            key="panel-toggle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setSidebarOpen(true)}
+            className="fixed top-[62px] left-3 z-40 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            aria-label="Open sidebar"
+          >
+            <PanelLeft className="w-4 h-4 text-gray-500" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* ── Sidebar (fixed, slides in from left) ── */}
       <AnimatePresence>
@@ -368,8 +377,16 @@ export function Search() {
             className="fixed top-0 left-0 h-full z-30 bg-white border-r border-gray-100 flex flex-col"
             aria-label="Conversation history"
           >
-            {/* Spacer aligned with header */}
-            <div className="h-14 shrink-0 border-b border-gray-100" />
+            {/* Spacer row — contains the toggle to avoid overlap with content */}
+            <div className="h-14 shrink-0 border-b border-gray-100 flex items-center px-3">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                aria-label="Close sidebar"
+              >
+                <PanelLeft className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
 
             {/* New conversation */}
             <div className="px-3 pt-3 pb-1">
