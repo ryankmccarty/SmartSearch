@@ -356,7 +356,7 @@ export function Search() {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.15 }}
             onClick={() => setSidebarOpen(true)}
-            className="fixed top-[70px] left-3 z-30 p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            className="fixed top-[70px] left-3 z-30 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
             aria-label="Open sidebar"
           >
             <SquarePen className="w-4 h-4 text-gray-500" />
@@ -445,7 +445,7 @@ export function Search() {
 
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100" role="banner">
-        <div className="max-w-2xl mx-auto px-5 h-14 flex items-center gap-3">
+        <div className="px-3 h-14 flex items-center gap-2">
           {/* Sidebar toggle */}
           <button
             onClick={() => setSidebarOpen(v => !v)}
