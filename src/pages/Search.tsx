@@ -349,7 +349,7 @@ export function Search() {
       {/* ── PanelLeft — always fixed below logo, toggles sidebar ── */}
       <button
         onClick={() => setSidebarOpen(v => !v)}
-        className="fixed top-[58px] left-3 z-40 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+        className="fixed top-[58px] left-3 z-40 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors flex items-center justify-center"
         aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
       >
         <PanelLeft className="w-4 h-4 text-gray-500" />
