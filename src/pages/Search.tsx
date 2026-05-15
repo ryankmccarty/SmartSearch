@@ -350,26 +350,7 @@ export function Search() {
             Ask [System]
           </button>
 
-          <AnimatePresence>
-            {hasSearched && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                className="flex-1"
-              >
-                <SearchBar
-                  initialQuery={query}
-                  onSearch={handleSearch}
-                  isHero={false}
-                  isLoading={isSearching}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {!hasSearched && <div className="flex-1" />}
+          <div className="flex-1" />
 
           <button
             onClick={() => setIsLoggedIn(v => !v)}
@@ -499,15 +480,11 @@ export function Search() {
               {!isSearching && response && (
                 <div className="space-y-10" aria-live="polite">
 
-                  {/* Query heading */}
-                  <div>
-                    <h1 className="text-[28px] sm:text-3xl font-bold text-gray-950 leading-tight">{query}</h1>
-                    {isLoggedIn && (
-                      <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
-                        <Sparkles className="w-3 h-3" aria-hidden="true" />
-                        Personalized based on your care history
-                      </p>
-                    )}
+                  {/* User query bubble */}
+                  <div className="flex justify-end">
+                    <div className="bg-gray-100 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[80%] text-gray-900 text-[15px] leading-relaxed">
+                      {query}
+                    </div>
                   </div>
 
                   {/* Did you mean */}
