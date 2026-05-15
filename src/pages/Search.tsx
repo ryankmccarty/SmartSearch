@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Star, MapPin, Clock, CheckCircle2, CalendarDays,
   LogIn, Sparkles, FileText, Send, ArrowRight, Filter,
-  Phone, MessageCircle, Copy,
+  Phone, MessageCircle, ArrowUpRight,
 } from 'lucide-react';
 
 // ─── Example queries (monospace pill style) ───────────────────────────────────
@@ -347,7 +347,7 @@ export function Search() {
             className="font-display font-bold text-[15px] text-gray-900 shrink-0 hover:text-gray-600 transition-colors"
             aria-label="Go to home"
           >
-            HappyHealth
+            Ask [System]
           </button>
 
           <AnimatePresence>
@@ -419,7 +419,7 @@ export function Search() {
 
                 {/* Caption */}
                 <p className="text-xs text-gray-400 text-center tracking-widest uppercase mb-5">
-                  Powered by Endeavor Health Clinical Library
+                  Powered by Guided Search
                 </p>
 
                 {/* Headline */}
@@ -468,7 +468,7 @@ export function Search() {
                       className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
                     >
                       <span className="font-mono text-sm text-gray-500 truncate">{q}</span>
-                      <Copy className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0" aria-hidden="true" />
+                      <ArrowUpRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0" aria-hidden="true" />
                     </motion.button>
                   ))}
                 </div>
