@@ -346,6 +346,24 @@ export function Search() {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
 
+      {/* ── Collapsed sidebar: floating SquarePen button ── */}
+      <AnimatePresence>
+        {!sidebarOpen && (
+          <motion.button
+            key="collapsed-new"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setSidebarOpen(true)}
+            className="fixed top-[70px] left-3 z-30 p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            aria-label="Open sidebar"
+          >
+            <SquarePen className="w-4 h-4 text-gray-500" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       {/* ── Sidebar (fixed, slides in from left) ── */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -368,9 +386,9 @@ export function Search() {
             <div className="px-3 pt-3 pb-1">
               <button
                 onClick={handleClearSearch}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-semibold text-gray-700 transition-colors"
               >
-                <SquarePen className="w-4 h-4 shrink-0 text-gray-400" aria-hidden="true" />
+                <SquarePen className="w-4 h-4 shrink-0 text-gray-500" aria-hidden="true" />
                 New conversation
               </button>
             </div>
