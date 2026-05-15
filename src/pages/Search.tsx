@@ -346,23 +346,14 @@ export function Search() {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
 
-      {/* ── Floating toggle — only when sidebar is closed ── */}
-      <AnimatePresence>
-        {!sidebarOpen && (
-          <motion.button
-            key="panel-toggle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setSidebarOpen(true)}
-            className="fixed top-[62px] left-3 z-40 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-            aria-label="Open sidebar"
-          >
-            <PanelLeft className="w-4 h-4 text-gray-500" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* ── PanelLeft — always fixed below logo, toggles sidebar ── */}
+      <button
+        onClick={() => setSidebarOpen(v => !v)}
+        className="fixed top-[58px] left-3 z-40 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+      >
+        <PanelLeft className="w-4 h-4 text-gray-500" />
+      </button>
 
       {/* ── Sidebar (fixed, slides in from left) ── */}
       <AnimatePresence>
@@ -377,16 +368,8 @@ export function Search() {
             className="fixed top-0 left-0 h-full z-30 bg-white border-r border-gray-100 flex flex-col"
             aria-label="Conversation history"
           >
-            {/* Spacer row — contains the toggle to avoid overlap with content */}
-            <div className="h-14 shrink-0 border-b border-gray-100 flex items-center px-3">
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                aria-label="Close sidebar"
-              >
-                <PanelLeft className="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
+            {/* Spacer — clears fixed header (56px) + PanelLeft button (28px) + gap (12px) */}
+            <div className="h-24 shrink-0 border-b border-gray-100" />
 
             {/* New conversation */}
             <div className="px-3 pt-3 pb-1">
@@ -442,16 +425,9 @@ export function Search() {
         )}
       </AnimatePresence>
 
-      {/* ── Main column (shifts right when sidebar open) ── */}
-      <motion.div
-        animate={{ marginLeft: sidebarOpen ? SIDEBAR_W : 0 }}
-        transition={{ duration: 0.22, ease: 'easeInOut' }}
-        className="flex flex-col min-h-screen"
-      >
-
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100" role="banner">
-        <div className="px-3 h-14 flex items-center gap-2">
+      {/* ── Header — fixed full-width so logo never shifts ── */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100" role="banner">
+        <div className="px-3 h-14 flex items-center">
           <button
             onClick={handleClearSearch}
             className="font-display font-bold text-[15px] text-gray-900 shrink-0 hover:text-gray-600 transition-colors"
@@ -483,6 +459,13 @@ export function Search() {
           </button>
         </div>
       </header>
+
+      {/* ── Main column (shifts right when sidebar open, offset for fixed header) ── */}
+      <motion.div
+        animate={{ marginLeft: sidebarOpen ? SIDEBAR_W : 0 }}
+        transition={{ duration: 0.22, ease: 'easeInOut' }}
+        className="pt-14 flex flex-col min-h-screen"
+      >
 
       {/* ── Page content ── */}
       <main>
