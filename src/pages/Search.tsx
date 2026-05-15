@@ -377,16 +377,29 @@ export function Search() {
             className="fixed top-0 left-0 h-full z-30 bg-white border-r border-gray-100 flex flex-col"
             aria-label="Conversation history"
           >
-            {/* Spacer aligned with header */}
-            <div className="h-14 shrink-0 border-b border-gray-100 flex items-center px-4">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">History</span>
+            {/* Sidebar header — mirrors main header */}
+            <div className="h-14 shrink-0 border-b border-gray-100 flex items-center px-3 gap-2">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+                aria-label="Close sidebar"
+              >
+                <PanelLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleClearSearch}
+                className="font-display font-bold text-[15px] text-gray-900 hover:text-gray-600 transition-colors"
+                aria-label="Go to home"
+              >
+                Ask [System]
+              </button>
             </div>
 
             {/* New conversation */}
             <div className="px-3 pt-3 pb-1">
               <button
                 onClick={handleClearSearch}
-                className="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-semibold text-gray-700 transition-colors"
+                className="w-full flex items-center gap-2 pl-1.5 pr-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold text-gray-700 transition-colors"
               >
                 <SquarePen className="w-4 h-4 shrink-0 text-gray-500" aria-hidden="true" />
                 New conversation
@@ -446,22 +459,25 @@ export function Search() {
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100" role="banner">
         <div className="px-3 h-14 flex items-center gap-2">
-          {/* Sidebar toggle */}
-          <button
-            onClick={() => setSidebarOpen(v => !v)}
-            className="shrink-0 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-          >
-            <PanelLeft className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={handleClearSearch}
-            className="font-display font-bold text-[15px] text-gray-900 shrink-0 hover:text-gray-600 transition-colors"
-            aria-label="Go to home"
-          >
-            Ask [System]
-          </button>
+          {/* Sidebar toggle + logo — hidden when sidebar is open (shown there instead) */}
+          {!sidebarOpen && (
+            <>
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="shrink-0 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Open sidebar"
+              >
+                <PanelLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleClearSearch}
+                className="font-display font-bold text-[15px] text-gray-900 shrink-0 hover:text-gray-600 transition-colors"
+                aria-label="Go to home"
+              >
+                Ask [System]
+              </button>
+            </>
+          )}
 
           <div className="flex-1" />
 
