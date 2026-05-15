@@ -414,6 +414,16 @@ export function Search() {
               )}
             </div>
 
+            {/* Agents */}
+            <div className="px-3 pt-2 pb-1 border-t border-gray-100">
+              <p className="px-3 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-widest">Agents</p>
+              {['Physician finder', 'Symptom checker', 'Appointment scheduler', 'Care planner'].map(agent => (
+                <div key={agent} className="px-3 py-2 text-sm text-gray-500 rounded-xl">
+                  {agent}
+                </div>
+              ))}
+            </div>
+
             {/* Settings */}
             <div className="px-3 pb-3 pt-2 border-t border-gray-100">
               <button className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-500 hover:bg-gray-50 rounded-xl transition-colors">
