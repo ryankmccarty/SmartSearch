@@ -15,6 +15,7 @@ import {
   Star, MapPin, Clock, CheckCircle2, CalendarDays,
   LogIn, Sparkles, FileText, Send, ArrowRight, Filter,
   Phone, MessageCircle, ArrowUpRight,
+  PanelLeft, SquarePen, ChevronRight, Settings,
 } from 'lucide-react';
 
 // ─── Example queries (monospace pill style) ───────────────────────────────────
@@ -280,15 +281,17 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function Search() {
-  const [query, setQuery]           = useState('');
-  const [followUp, setFollowUp]     = useState('');
+  const [query, setQuery]             = useState('');
+  const [followUp, setFollowUp]       = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [response, setResponse]     = useState<SearchResponse | null>(null);
-  const [intent, setIntent]         = useState<QueryIntent>('general');
-  const [condKey, setCondKey]       = useState('generic');
-  const [procKey, setProcKey]       = useState('generic');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [response, setResponse]       = useState<SearchResponse | null>(null);
+  const [intent, setIntent]           = useState<QueryIntent>('general');
+  const [condKey, setCondKey]         = useState('generic');
+  const [procKey, setProcKey]         = useState('generic');
+  const [isLoggedIn, setIsLoggedIn]   = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [chatHistory, setChatHistory] = useState<string[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = async (newQuery: string) => {
@@ -302,6 +305,8 @@ export function Search() {
     setHasSearched(true);
     setFollowUp('');
     window.scrollTo({ top: 0 });
+    // Add to history (deduplicated, most recent first)
+    setChatHistory(prev => [newQuery, ...prev.filter(q => q !== newQuery)].slice(0, 20));
     const res = await performSearch(newQuery);
     setResponse(res);
     setIsSearching(false);
@@ -336,12 +341,103 @@ export function Search() {
   const showResources = intent === 'general' && (response?.results.length ?? 0) > 0;
   const showNoResults = !isSearching && response && response.confidence === 'zero';
 
+  const SIDEBAR_W = 260;
+
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
 
+      {/* ── Sidebar (fixed, slides in from left) ── */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            {/* Backdrop for small screens */}
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/10 z-20"
+              onClick={() => setSidebarOpen(false)}
+            />
+
+            <motion.aside
+              key="sidebar"
+              initial={{ x: -SIDEBAR_W }}
+              animate={{ x: 0 }}
+              exit={{ x: -SIDEBAR_W }}
+              transition={{ duration: 0.22, ease: 'easeInOut' }}
+              style={{ width: SIDEBAR_W }}
+              className="fixed top-0 left-0 h-full z-30 bg-gray-50 border-r border-gray-100 flex flex-col"
+              aria-label="Conversation history"
+            >
+              {/* Spacer so content clears the header */}
+              <div className="h-14 shrink-0 border-b border-gray-100" />
+
+              {/* New conversation */}
+              <div className="p-3">
+                <button
+                  onClick={handleClearSearch}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors"
+                >
+                  <SquarePen className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  New conversation
+                </button>
+              </div>
+
+              {/* History list */}
+              <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
+                {chatHistory.length === 0 ? (
+                  <p className="text-xs text-gray-400 px-3 py-3">No recent conversations</p>
+                ) : (
+                  chatHistory.map((item, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSearch(item)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition-colors ${
+                        item === query && hasSearched
+                          ? 'bg-white text-gray-900 font-semibold shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{item}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {/* Settings */}
+              <div className="p-3 border-t border-gray-100">
+                <button className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-500 hover:bg-gray-100 rounded-xl transition-colors">
+                  <Settings className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  Settings
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Main column (shifts right when sidebar open) ── */}
+      <motion.div
+        animate={{ marginLeft: sidebarOpen ? SIDEBAR_W : 0 }}
+        transition={{ duration: 0.22, ease: 'easeInOut' }}
+        className="flex flex-col min-h-screen"
+      >
+
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100" role="banner">
-        <div className="max-w-2xl mx-auto px-5 h-14 flex items-center gap-4">
+        <div className="max-w-2xl mx-auto px-5 h-14 flex items-center gap-3">
+          {/* Sidebar toggle */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            className="shrink-0 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          >
+            <PanelLeft className="w-5 h-5" />
+          </button>
+
           <button
             onClick={handleClearSearch}
             className="font-display font-bold text-[15px] text-gray-900 shrink-0 hover:text-gray-600 transition-colors"
@@ -592,15 +688,15 @@ export function Search() {
         </AnimatePresence>
       </main>
 
-      {/* ── Fixed follow-up bar ── */}
+      {/* ── Fixed follow-up bar (shifts with sidebar) ── */}
       <AnimatePresence>
         {hasSearched && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0, left: sidebarOpen ? SIDEBAR_W : 0 }}
             exit={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.22, delay: 0.2 }}
-            className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-5 py-3"
+            transition={{ duration: 0.22, delay: hasSearched ? 0.2 : 0 }}
+            className="fixed bottom-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-5 py-3"
             role="complementary"
             aria-label="Ask a follow-up question"
           >
@@ -626,6 +722,7 @@ export function Search() {
         )}
       </AnimatePresence>
 
+      </motion.div> {/* end main column */}
     </div>
   );
 }
