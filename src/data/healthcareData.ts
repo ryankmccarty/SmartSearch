@@ -110,9 +110,9 @@ export const conditionData: Record<string, ConditionData> = {
       },
     ],
     citations: [
-      { id: 1, source: 'Mayo Clinic', title: 'Back pain — Symptoms and causes', url: '#' },
-      { id: 2, source: 'NIH (NIAMS)', title: 'Back Pain Fact Sheet', url: '#' },
-      { id: 3, source: 'Cleveland Clinic', title: 'Low Back Pain: Diagnosis & Treatment', url: '#' },
+      { id: 1, source: 'Patient Education', title: 'Understanding Low Back Pain', url: '#' },
+      { id: 2, source: 'Ortho & Spine', title: 'Spinal Conditions & Treatment Options', url: '#' },
+      { id: 3, source: 'Rehabilitation Services', title: 'Physical Therapy for Back & Spine', url: '#' },
     ],
     relatedSpecialties: ['Orthopedics', 'Physical Medicine', 'Neurology', 'Pain Management'],
     followUps: [
@@ -178,9 +178,9 @@ export const conditionData: Record<string, ConditionData> = {
       },
     ],
     citations: [
-      { id: 1, source: 'American Heart Association', title: 'Warning Signs of a Heart Attack', url: '#' },
-      { id: 2, source: 'Mayo Clinic', title: 'Chest pain — Symptoms and causes', url: '#' },
-      { id: 3, source: 'Cleveland Clinic', title: 'Chest Pain: Causes, Diagnosis & Treatment', url: '#' },
+      { id: 1, source: 'Cardiovascular Institute', title: 'Recognizing a Cardiac Emergency', url: '#' },
+      { id: 2, source: 'Emergency Services', title: 'Chest Pain: What You Need to Know', url: '#' },
+      { id: 3, source: 'Patient Education', title: 'Common Causes of Chest Discomfort', url: '#' },
     ],
     relatedSpecialties: ['Cardiology', 'Emergency Medicine', 'Gastroenterology', 'Pulmonology'],
     followUps: [
@@ -219,7 +219,7 @@ export const genericCondition: ConditionData = {
     },
   ],
   citations: [
-    { id: 1, source: 'NIH MedlinePlus', title: 'When to Call the Doctor', url: '#' },
+    { id: 1, source: 'Patient Services', title: 'Choosing the Right Level of Care', url: '#' },
   ],
   relatedSpecialties: ['Primary Care', 'Urgent Care', 'Telehealth'],
   followUps: [
@@ -278,8 +278,8 @@ export const procedureData: Record<string, ProcedureData> = {
       },
     ],
     citations: [
-      { id: 1, source: 'RadiologyInfo.org', title: 'Magnetic Resonance Imaging (MRI) of the Body', url: '#' },
-      { id: 2, source: 'Mayo Clinic', title: 'MRI — What you can expect', url: '#' },
+      { id: 1, source: 'Imaging & Radiology', title: 'MRI Scan: Preparation & What to Expect', url: '#' },
+      { id: 2, source: 'Patient Education', title: 'Guide to Imaging Procedures', url: '#' },
     ],
     followUps: [
       'Find an MRI imaging location near me',
@@ -316,7 +316,7 @@ export const genericProcedure: ProcedureData = {
     },
   ],
   citations: [
-    { id: 1, source: 'NIH MedlinePlus', title: 'Preparing for Surgery', url: '#' },
+    { id: 1, source: 'Patient Services', title: 'Preparing for Your Procedure', url: '#' },
   ],
   followUps: [
     'What questions should I ask my doctor?',
